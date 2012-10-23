@@ -31,6 +31,10 @@ var OPERATORS = {
     "%": {"%=" : false},
     "=": {"==" : false},
     "!=":false,
+    "(":false,
+    ")":false,
+    ",":false,
+    ":":false
 }
 var Tokenizer = function(text) {
     var TOKEN_SPLITS = { " " : false }
@@ -46,6 +50,7 @@ var Tokenizer = function(text) {
             build = build.trim();
             if (build != "") {
                 chunked.push(build);
+                build = "";
             }
             do {
                 curOps = curOps[token];
@@ -63,10 +68,14 @@ var Tokenizer = function(text) {
             } while (true);
             chunked.push(token);
         } else {
-            build += char;
-            if (token in TOKEN_SPLITS) {
-                chunked.push(build);
+            if (char in TOKEN_SPLITS) {
+                build = build.trim();
+                if (build != "") {
+                    chunked.push(build);
+                }
                 build = "";
+            } else {
+                build += char;
             }
         }
     }
