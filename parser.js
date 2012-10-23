@@ -33,6 +33,10 @@ var OPERATORS = {
     "!=":false,
     "(":false,
     ")":false,
+    "{":false,
+    "}":false,
+    "[":false,
+    "]":false,
     ",":false,
     ":":false
 }
