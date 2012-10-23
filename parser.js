@@ -6,39 +6,39 @@ var Parser = function () {
     }
 }
 var OPERATORS = {
-    "+": {"+=" : true},
-    "-": {"-=" : true},
+    "+": {"+=" : false},
+    "-": {"-=" : false},
     "*": {"**" :
-            {"**=" : true},
-          "*=" : true
+            {"**=" : false},
+          "*=" : false
          },
     "/": {"//" :
-            {"//=" : true},
-          "/=" : true
+            {"//=" : false},
+          "/=" : false
          },
-    "^": {"^=" : true},
-    "&": {"&=" : true},
-    "|": {"|=" : true},
-    "~": true,
+    "^": {"^=" : false},
+    "&": {"&=" : false},
+    "|": {"|=" : false},
+    "~": false,
     ">": {">>" :
-            { ">>=" : true},
-          ">=" : true
+            { ">>=" : false},
+          ">=" : false
          },
     "<": {"<<" :
-            { "<<=" : true},
-          "<=" : true
+            { "<<=" : false},
+          "<=" : false
          },
-    "%": {"%=" : true},
-    "=": {"==" : true},
-    "!=":true,
-    "and":true,
-    "or": true,
-    "not":true,
-    "in": true,
-    "is":true
+    "%": {"%=" : false},
+    "=": {"==" : false},
+    "!=":false,
+    "and":false,
+    "or": false,
+    "not":false,
+    "in": false,
+    "is":false
 }
 var Tokenizer = function(text) {
-    var TOKEN_SPLITS = { " " : true }
+    var TOKEN_SPLITS = { " " : false }
     var chunked = [];
     var build = "";
     text = text.trim();
@@ -48,16 +48,20 @@ var Tokenizer = function(text) {
         var token = char;
         curOps = OPERATORS;
         if (token in curOps) {
-            curOps = curOps[token];
             do {
+                curOps = curOps[token];
                 if (i+1 == text.length) {
                     break;
                 } else {
                     var next = text.charAt(i+1)
-                    token += next;
+                    if (curOps && token + next in curOps) {
+                        token += next;
+                    } else {
+                        break;
+                    }
                 }
                 i++;
-            } while (curOps && token in curOps);
+            } while (true);
         }
         if (!(token in TOKEN_SPLITS)) {
             chunked.push(token);
