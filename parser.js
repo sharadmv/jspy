@@ -6,65 +6,66 @@ var Parser = function () {
     }
 }
 var OPERATORS = {
-    "+":    2,
-    "-":    2,
-    "*":    3,
-    "/":    3,
-    "**":   1,
-    "^": true,
-    "&": true,
-    "|": true,
-    "~":    2,
-    ">>": true,
-    "<<": true,
-    "%":    3,
-    "//":   3,
-    ">": true,
-    "<": true,
-    "=": true,
-    ">=": true,
-    "<=": true,
-    "!=": true,
-    "+=": true,
-    "-=": true,
-    "*=": true,
-    "/=": true,
-    "**=": true,
-    "//=": true,
-    "and": true,
+    "+": {"+=" : true},
+    "-": {"-=" : true},
+    "*": {"**" :
+            {"**=" : true},
+          "*=" : true
+         },
+    "/": {"//" :
+            {"//=" : true},
+          "/=" : true
+         },
+    "^": {"^=" : true},
+    "&": {"&=" : true},
+    "|": {"|=" : true},
+    "~": true,
+    ">": {">>" :
+            { ">>=" : true},
+          ">=" : true
+         },
+    "<": {"<<" :
+            { "<<=" : true},
+          "<=" : true
+         },
+    "%": {"%=" : true},
+    "=": {"==" : true},
+    "!=":true,
+    "and":true,
     "or": true,
-    "not": true,
+    "not":true,
     "in": true,
-    "not in": true,
-    "is": true,
-    "is not": true,
+    "is":true
 }
 var Tokenizer = function(text) {
     var TOKEN_SPLITS = { " " : true }
-    var DELIMITER = { " " : true }
     var chunked = [];
     var build = "";
+    text = text.trim();
     for (var i = 0; i < text.length; i++) {
         var char = text.charAt(i);
-        if (char in TOKEN_SPLITS) {
-            if (build != "") {
-                chunked.push(build);
-            }
-            chunked.push(char);
-            build = "";
-        } else if (char in DELIMITER) {
-            if (build != "") {
-                chunked.push(build);
-            }
-            build = "";
-        }else {
-            build += text.charAt(i);
+        var curOps = OPERATORS;
+        var token = char;
+        curOps = OPERATORS;
+        if (token in curOps) {
+            do {
+                if (i+1 == text.length) {
+                    break;
+                } else {
+                    var next = text.charAt(i+1)
+                    if (!(next in curOps)) {
+                        break;
+                    }
+                    token += next;
+                }
+                i++;
+                curOps = OPERATORS[token];
+            } while (curOps && token in curOps);
+        }
+        if (!(token in TOKEN_SPLITS)) {
+            chunked.push(token);
         }
     }
-    if (build != ""){
-        chunked.push(build.trim());
-    }
-    build = "";
     var length = chunked.length;
     var index = 0;
     var next = function() {
