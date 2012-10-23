@@ -31,11 +31,6 @@ var OPERATORS = {
     "%": {"%=" : false},
     "=": {"==" : false},
     "!=":false,
-    "and":false,
-    "or": false,
-    "not":false,
-    "in": false,
-    "is":false
 }
 var Tokenizer = function(text) {
     var TOKEN_SPLITS = { " " : false }
@@ -48,6 +43,10 @@ var Tokenizer = function(text) {
         var token = char;
         curOps = OPERATORS;
         if (token in curOps) {
+            build = build.trim();
+            if (build != "") {
+                chunked.push(build);
+            }
             do {
                 curOps = curOps[token];
                 if (i+1 == text.length) {
@@ -59,13 +58,21 @@ var Tokenizer = function(text) {
                     } else {
                         break;
                     }
+                    i++;
                 }
-                i++;
             } while (true);
-        }
-        if (!(token in TOKEN_SPLITS)) {
             chunked.push(token);
+        } else {
+            build += char;
+            if (token in TOKEN_SPLITS) {
+                chunked.push(build);
+                build = "";
+            }
         }
+    }
+    build = build.trim();
+    if (build != "") {
+        chunked.push(build);
     }
     console.log(chunked);
     var length = chunked.length;
