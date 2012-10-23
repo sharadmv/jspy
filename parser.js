@@ -48,24 +48,22 @@ var Tokenizer = function(text) {
         var token = char;
         curOps = OPERATORS;
         if (token in curOps) {
+            curOps = curOps[token];
             do {
                 if (i+1 == text.length) {
                     break;
                 } else {
                     var next = text.charAt(i+1)
-                    if (!(next in curOps)) {
-                        break;
-                    }
                     token += next;
                 }
                 i++;
-                curOps = OPERATORS[token];
             } while (curOps && token in curOps);
         }
         if (!(token in TOKEN_SPLITS)) {
             chunked.push(token);
         }
     }
+    console.log(chunked);
     var length = chunked.length;
     var index = 0;
     var next = function() {
