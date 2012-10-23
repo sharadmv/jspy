@@ -79,6 +79,7 @@ var Tokenizer = function(text) {
             }
         }
     }
+    //TODO we use this piece of code a lot. perhaps make some sort of token buffer class that does this for us
     build = build.trim();
     if (build != "") {
         chunked.push(build);
