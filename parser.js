@@ -5,7 +5,7 @@ var Parser = function () {
         return tokens;
     }
 }
-var OPERATORS = {
+var SPLITS = {
     "+": {"+=" : false},
     "-": {"-=" : false},
     "*": {"**" :
@@ -30,7 +30,7 @@ var OPERATORS = {
          },
     "%": {"%=" : false},
     "=": {"==" : false},
-    "!=":false,
+    "!": {"!=" : false},
     "(":false,
     ")":false,
     "{":false,
@@ -47,9 +47,9 @@ var Tokenizer = function(text) {
     text = text.trim();
     for (var i = 0; i < text.length; i++) {
         var char = text.charAt(i);
-        var curOps = OPERATORS;
+        var curOps = SPLITS;
         var token = char;
-        curOps = OPERATORS;
+        curOps = SPLITS;
         if (token in curOps) {
             build = build.trim();
             if (build != "") {
