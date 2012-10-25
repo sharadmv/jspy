@@ -15,7 +15,19 @@ var Kinds = {
     IF: 5,
     ELSE: 6,
     ELIF: 7,
-    ERR: 8
+    ERR: 8,
+    INT: 9,
+    FLOAT: 10,
+    CLN: 11,
+    LP: 12,
+    RP: 13,
+    EOL: 14
+}
+
+var SpecialCharacters = {
+    "(" : "LP",
+    ")" : "RP",
+    ":" : "CLN"
 }
 
 var Identifiers = {
@@ -70,93 +82,180 @@ var Tokenizer = function(text) {
     var build = "";
     var id_begin = /[A-Za-z_]/;
     var id_inside = /\w/;
+    var is_number = /[0-9]/;
+    var is_hex = /[0-9A-Fa-f]/;
+    var seen_char;
+    var indent_stack = [0];
     text = text.trim();
     var i = 0;
-    var is_number = function(text) {
-        return /[0-9]+/g.exec(text);
-    }
     var current = function(){
         return text.charAt(i);
+    }
+
+    var next = function(){
+        return text.charAt(i + 1);
     }
     var consume = function(){
         var rval = text.charAt(i);
         i ++;
         return rval;
     }
-    var accept = function(all_allowed){
-        var char = text.charAt(i);
-        var any = false;
 
-        if(i - 1 == text.length){
-            return false;
+    var emit = function(type){
+        console.log("Emitting " + build);
+        if(!(/\s/.exec(build))){
+            seen_char = true;
         }
-
-        for(var j = 0; j < all_allowed.length; j ++){
-            if(char == all_allowed.charAt(j)){
-                build += char;
-                i ++;
-                char = text.charAt(i);
-                any = true;
-            }
-        }
-        return any;
+        chunked.push(build, type);
     }
-    var accept_regex = function(reg){
-        if(i - 1 == text.length){
+
+    var accept = function(reg){
+        if(i - 1 === text.length){
             console.log('done');
             return false;
         }
         var char = text.charAt(i);
-        console.log('char is ', char);
         if(reg.exec(current())){
-            console.log('yay');
             build += consume();
             return true;
         }
         return false;
     }
-    for (; i < text.length; i++) {
+    var accept_run = function(reg){
+        var rval = false;
+        while(accept(reg)){
+            rval = true;
+        }
+        return rval;
+    }
+
+    var count_spaces = function(str){
+        var count = 0;
+        for(; count < str.length && str.charAt(count) === " "; count ++){}
+        return count;
+    }
+
+    var indent_level = function(){
+        var level = 0;
+        for(var i = 0; i < indent_stack.length; i ++){
+            level += indent_stack[i];
+        }
+        return level;
+    }
+
+    var deal_with_indent = function(){
+        var front = build;
+        while(build.indexOf('\t') > 0){
+            var spaces = " ";
+            var temp;
+            var count = -1;
+            while (count % 8 != 0 && spaces.length < 9){
+                temp = build.replace('\t', spaces);
+                spaces += " ";
+                count = count_spaces(temp);
+            }
+            front = temp;
+        }
+        current_indent = indent_stack[indent_stack.length-1];
+        if(front.length > current_indent){
+            indent_stack.push(front.length - current_indent);
+            emit(Kinds.INDENT);
+        } else if(front.length < current_indent){
+            var back = indent_stack.pop();
+            var num_dedent = 0;
+            while(back_val != 0 && indent_level() > len_curr){
+                back_val = indent_stack.pop();
+                num_dedent++;
+            }
+            if (indent_level() < front.length){
+                emit(Kinds.ERR);
+            }
+            while (num_dedent > 0){
+                emit(Kinds.DEDENT);
+                num_dedent --;
+            }
+        }
+    }
+
+    while(i < text.length){
         build = "";
+        console.log("processing " + current());
         var curOps = SPLITS;
-        var token = text.charAt(i);
-        if (token in curOps) {
+        if (current() in curOps) {
+            consume();
             do {
-                curOps = curOps[token];
+                curOps = curOps[current()];
                 var is_num = false;
-                if (i+1 == text.length) {
+                if (i+1 === text.length) {
                     break;
                 } else {
-                    var next = text.charAt(i+1)
-                    if (curOps && token + next in curOps) {
-                        token += next;
-                    } else if(is_number(next)){
-                        is_num = true;
-                        break;
-                    } else {
+                    if (curOps && token + next() in curOps) {
+                        consume();
+                    } else{
+                        if(is_number.exec(next())){
+                            is_num = true;
+                        }
                         break;
                     }
-                    i++;
                 }
             } while (true);
             if(!is_num){
-                chunked.push(token);
+                emit(Kinds.OP);
                 continue;
             }
         }
-        if (accept_regex(id_begin)){
-            while(accept_regex(id_inside)){}
+        if (current() in SpecialCharacters){
+            var temp = consume();
+            emit(Kinds[SpecialCharacters[temp]]);
+        }
+        else if (accept(id_begin)){
+            while(accept(id_inside)){}
             console.log("build is ", build);
             if (build in Identifiers){
-                chunked.push([build, Kinds[build.toUpperCase()]]);
+                emit(Kinds[build.toUpperCase()]);
             }
             else{
-                chunked.push([build, Kinds.ID]);
+                emit(Kinds.ID);
             }
         }
-        else if(is_number(token) || accept("+-")){
+        else if(is_number.exec(current()) || accept(/[+-~]/)){
+            var reg = is_number;
+            var type = Kinds.INT;
+            if (accept(/0/) && accept(/[xX]/)){
+                reg = is_hex;
+            }
+            accept_run(reg);
+            if(accept(/\./)){
+                type = Kinds.FLOAT;
+                if (!accept(reg)){
+                    emit(Kinds.ERR);
+                    i = text.length;
+                }
+                else{
+                    accept_run(reg);
+                }
+            }
 
+            if(accept(/[eE]/)){
+                type = Kinds.FLOAT;
+                accept(/[+-]/);
+                accept_run(reg);
+            }
+            emit(type);
+        }
+        else if(/\s/.exec(current())){
+            switch (consume()) {
+                case '\n':
+                    seen_char = false;
+                    emit(Kinds.EOL)
+                    break;
+                case '\t':
+                    if(!seen_char){
+                        deal_with_indent();
+                    }
+            }
         } else{
-            chunked.push([token, Kinds.ERR]);
+            emit(Kinds.ERR);
         }
     }
     //TODO we use this piece of code a lot. perhaps make some sort of token buffer class that does this for us
@@ -164,7 +263,7 @@ var Tokenizer = function(text) {
     var length = chunked.length;
     var index = 0;
     var next = function() {
-        if (index == length) {
+        if (index === length) {
             return null;
         }
         var token = chunked[index];
