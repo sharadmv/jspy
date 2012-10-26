@@ -17,7 +17,19 @@ var proxy = {
         var n = function() {
             return initInstance(cls, arguments);
         }
-        var cls = { 'get' : get, 'set' : set , 'new' : n , attributes: attributes };
+        var obtain = function(name) {
+            if (name in secret) {
+                return secret[name];
+            } else {
+                if (base) {
+                    return base.obtain(name);
+                } else {
+                    return undefined;
+                }
+            }
+        }
+        var secret = {}
+        var cls = { 'get' : get, 'set' : set , 'new' : n , attributes: attributes , 'secret' : secret , 'obtain' : obtain};
         return cls;
     },
     makeInstance : function(cls){
@@ -43,8 +55,34 @@ var proxy = {
         var set = function(name, value) {
             attributes[name] = value;
         }
+        var obtain = function(name) {
+            if (name in secret) {
+                return secret[name];
+            } else {
+                return cls.obtain(name);
+            }
+        }
         var attributes = {};
-        var instance = { attributes : attributes, 'get' : get, 'set' : set , toString: function() {return this.get('__str__')()}};
+        var secret = {};
+        var instance = {
+            'get' : get,
+            'set' : set,
+            'attributes' : attributes,
+            'define' : function() {
+            },
+            'secret' : secret,
+            'obtain' : obtain,
+            'toString' : function() {
+                return this.get('__str__')()
+            },
+            'call' : function() {
+                if (this.obtain("callable")) {
+                    return this.obtain('value').apply(this.obtain('value'), arguments);
+                } else {
+                    throw("NOT CALLABLE U FOOL");
+                }
+            }
+        };
         return instance;
     }
 }
