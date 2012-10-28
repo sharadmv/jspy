@@ -7,21 +7,15 @@ var Parser = function () {
 }
 
 var Kinds = {
-    DEF: 0,
     ID: 1,
     INDENT: 2,
     DEDENT: 3,
     OP: 4,
-    IF: 5,
-    ELSE: 6,
-    ELIF: 7,
-    ERR: 8,
-    INT: 9,
-    FLOAT: 10,
-    CLN: 11,
-    LP: 12,
-    RP: 13,
-    EOL: 14
+    LITERAL:5,
+    DELIM: 6,
+    NEWLINE: 7,
+    KEYWORD: 8,
+    ERR: 9,
 }
 
 var SpecialCharacters = {
@@ -77,8 +71,6 @@ var SPLITS = {
 }
 
 var Tokenizer = function(text) {
-    var TOKEN_SPLITS = { " " : false }
-    var chunked = [];
     var build = "";
     var id_begin = /[A-Za-z_]/;
     var id_inside = /\w/;
@@ -88,11 +80,12 @@ var Tokenizer = function(text) {
     var indent_stack = [0];
     text = text.trim();
     var i = 0;
+    var res;
     var current = function(){
         return text.charAt(i);
     }
 
-    var next = function(){
+    var _next = function(){
         return text.charAt(i + 1);
     }
     var consume = function(){
@@ -177,7 +170,7 @@ var Tokenizer = function(text) {
         }
     }
 
-    while(i < text.length){
+    var next = function(){
         build = "";
         console.log("processing " + current());
         var curOps = SPLITS;
@@ -189,10 +182,10 @@ var Tokenizer = function(text) {
                 if (i+1 === text.length) {
                     break;
                 } else {
-                    if (curOps && token + next() in curOps) {
+                    if (curOps && token + _next() in curOps) {
                         consume();
                     } else{
-                        if(is_number.exec(next())){
+                        if(is_number.exec(_next())){
                             is_num = true;
                         }
                         break;
@@ -257,22 +250,7 @@ var Tokenizer = function(text) {
         } else{
             emit(Kinds.ERR);
         }
-    }
-    //TODO we use this piece of code a lot. perhaps make some sort of token buffer class that does this for us
-    console.log(chunked);
-    var length = chunked.length;
-    var index = 0;
-    var next = function() {
-        if (index === length) {
-            return null;
-        }
-        var token = chunked[index];
-        index++;
-        return token;
-    }
-
-    this.tokens = function() {
-        return chunked;
+        return res;
     }
 }
 module.exports = Parser;
