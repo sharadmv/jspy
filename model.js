@@ -35,9 +35,9 @@ var Types = {
         '__str__' : function(self) {
             return new Util.Delimiter(", ","[","]").join(self.get('_exp'));
         },
-        '__add__' : function(self, b) {
+        '__add__' : function(self, list) {
             var lst = Types.list['new']();
-            lst.set('_exp', self.get('_exp').concat(b.get('_exp')))
+            lst.set('_exp', self.get('_exp').concat(list.get('_exp')));
             return lst;
         },
         'extend' : function(self, b) {
@@ -45,6 +45,18 @@ var Types = {
         },
         'append' : function(self, b) {
             self.get('_exp').push(b);
+        }
+    }),
+    jsproxy : makeClass({
+        '__init__' : function(self, obj) {
+            self.set("_type", "jsproxy")
+            self.set("_exp", obj);
+        },
+        '__getattr__' : function(self, name) {
+            return self.get("_exp")[name];
+        },
+        '__str__' : function(self) {
+            return self.get("_exp");
         }
     }),
     str : function(exp) {
@@ -76,7 +88,7 @@ var Types = {
         this.__mul__ = function(b) {
             return new Types.Float(this._exp * b._exp);
         }
-    }
+    },
 }
 var list = Types.list['new']();
 var list2 = Types.list['new']();
