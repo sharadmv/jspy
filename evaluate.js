@@ -9,24 +9,24 @@ var Frame = function() {
 }
 var Evaluator = function () {
     global = new Frame();
-    this.eval = function(tokens, env){
+    this.eval = function(stmts, env){
         if (!env) {
             env = global;
         }
-        var token = tokens.shift();
+        var stmt = stmts.shift();
         stack = [];
         expr = [];
-        while (token) {
-            if (KEYWORDS[token]) {
-                return new Expression[token](tokens);
-            } else {
-                if (tokens[0] == "=") {
-                    tokens.shift();
-                    temp = this.eval(tokens);
-                    env.set(token,temp);
-                    return None;
-                } else {
-                    eval = evalToken(token);
+        while (stmt) {
+           // if (KEYWORDS[token]) {
+           //     return (new (Expression[token])(tokens));
+           // } else {
+           //     if (tokens[0] == "=") {
+           //         tokens.shift();
+           //         temp = this.eval(tokens);
+           //         env.set(token,temp);
+           //         return None;
+           //     } else {
+           //       eval = evalToken(token);
                     val = eval[0];
                     type = eval[1];
                     if (type == "int" || type == "float") {
@@ -46,9 +46,9 @@ var Evaluator = function () {
                             temp = stack.pop();
                         }
                     }
-                }
 
-            }
+
+
             token = tokens.shift();
         }
         while (stack.length != 0) {
@@ -106,7 +106,7 @@ var Evaluator = function () {
     }
 
     var evalToken = function(token) {
-        if (!isNaN(parseFloat(token)) || token.match(/[0-9]+[.][0-9]+/g)) {
+        if (!isNaN(parseFloat(token)) || token.match(/-+]?[0-9]*\.?[0-9]/g)) {
             return [parseFloat(token), "float"];
         } else if (!isNaN(parseInt(token)) || token.match(/[0-9]+/g)) {
             return [parseInt(token), "int"];
@@ -139,6 +139,8 @@ var Evaluator = function () {
 }
 var Expression = {
     "def" : function(tokens) {
+        //I CLAIM THIS AS MY OWN
+        //--Stephen
         this.name = tokens.shift()
         this.formals = [];
         tokens.shift()

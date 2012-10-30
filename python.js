@@ -4,10 +4,10 @@ var evaluator = new (require('./evaluate.js'))();
 
 (function read() {
     reader.read(function(data) {
-        var tokens = parser.parse(data);
+        var stmts = parser.parse(data);
         try {
 
-            var ret = evaluator.eval(tokens);
+            var ret = evaluator.eval(stmts);
         } catch (e) {
             console.log(e);
         }
