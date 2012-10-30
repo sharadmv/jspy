@@ -1,8 +1,61 @@
 var Parser = function () {
-    this.parse = function(data){
-        var tokenizer = new Tokenizer(data);
-        var tokens = tokenizer.tokens();
-        return tokens;
+    var nextTok = null;
+    var tokenizer = null;
+    var getNext = function(){
+        if(nextTok === null){
+            nextTok = tokenizer.next();
+        }
+        return nextTok;
+    }
+    var consume = function(){
+        var temp = nextTok;
+        nextTok = null;
+        return temp;
+    }
+    var accept = function(typ){
+        if(getNext().typ === typ){
+            consume();
+            return true;
+        }
+        return false;
+    }
+    var expect = function(typ){
+        if(getNext().typ === typ){
+            consume();
+            return;
+        }
+        throw new SyntaxError("Unexpected token " + getNext() + ". Wanted " + typ);
+    }
+    var parse = function(data){
+        tokenizer = new Tokenizer(data);
+        return parseStmt();
+    }
+    var parseStmt = function(){
+        return;
+    }
+    var parseSimple = function(){
+        return;
+    }
+    var parseSmall = function(){
+        return;
+    }
+    var parseExprStmt = function(){
+        return;
+    }
+    var parseTestList = function(){
+        test = parseTest();
+        if(accept(",")){
+            test = [test]
+            do{
+                test.append(parseTest());
+            }while(accept(","))
+        }
+    }
+    var parseTest = function(){
+        return;
+    }
+    var parseCompound = function(){
+        return;
     }
 }
 
@@ -15,16 +68,9 @@ var Kinds = {
     DELIM: 6,
     NEWLINE: 7,
     KEYWORD: 8,
-    ERR: 9,
 }
 
-var SpecialCharacters = {
-    "(" : "LP",
-    ")" : "RP",
-    ":" : "CLN"
-}
-
-var Identifiers = {
+var Keywords = {
     "def" : false,
     "if" : false,
     "else" : false,
@@ -32,6 +78,17 @@ var Identifiers = {
     "return" : false,
     "while" : false,
     "for" : false,
+}
+
+var Delims = {
+    "(" : false,
+    ")" : false,
+    ":" : false,
+    "[" : false,
+    "]" : false,
+    "{" : false,
+    "}" : false,
+    "." : false
 }
 
 var SPLITS = {
@@ -99,7 +156,7 @@ var Tokenizer = function(text) {
         if(!(/\s/.exec(build))){
             seen_char = true;
         }
-        chunked.push(build, type);
+        res = {content: build, typ: type};
     }
 
     var accept = function(reg){
@@ -161,7 +218,7 @@ var Tokenizer = function(text) {
                 num_dedent++;
             }
             if (indent_level() < front.length){
-                emit(Kinds.ERR);
+                throw new SyntaxError("Bad indent.");
             }
             while (num_dedent > 0){
                 emit(Kinds.DEDENT);
@@ -204,7 +261,7 @@ var Tokenizer = function(text) {
         else if (accept(id_begin)){
             while(accept(id_inside)){}
             console.log("build is ", build);
-            if (build in Identifiers){
+            if (build in Keywords){
                 emit(Kinds[build.toUpperCase()]);
             }
             else{
@@ -221,7 +278,7 @@ var Tokenizer = function(text) {
             if(accept(/\./)){
                 type = Kinds.FLOAT;
                 if (!accept(reg)){
-                    emit(Kinds.ERR);
+                    throw new SyntaxError("Unexpected period");
                     i = text.length;
                 }
                 else{
@@ -248,9 +305,11 @@ var Tokenizer = function(text) {
                     }
             }
         } else{
-            emit(Kinds.ERR);
+            throw new SyntaxError("Unexpected token " + current());
         }
         return res;
     }
+    this.next = next;
 }
+
 module.exports = Parser;
