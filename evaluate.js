@@ -18,7 +18,7 @@ var Evaluator = function () {
         expr = [];
         while (token) {
             if (KEYWORDS[token]) {
-                return (new (Expression[token])(tokens));
+                return new Expression[token](tokens);
             } else {
                 if (tokens[0] == "=") {
                     tokens.shift();
