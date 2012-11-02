@@ -1,59 +1,126 @@
 var Parser = function () {
-    var nextTok = null;
+    var nextLst = [];
     var tokenizer = null;
-    var getNext = function(){
-        if(nextTok === null){
-            nextTok = tokenizer.next();
-        }
-        return nextTok;
+    var haveMore = function(){
+        return tokenizer.haveMore();
     }
-    var consume = function(){
-        var temp = nextTok;
-        nextTok = null;
-        return temp;
+    var getNext = function(pos){
+        if(arguments.length == 0){
+            pos = 0;
+        }
+        while(nextLst.length < (pos + 1)){
+            nextLst.append(tokenizer.next());
+        }
+        return nextTok[pos];
+    }
+    var consume = function(num){
+        if(arguments.length == 0){
+            num = 1;
+        }
+        while(num-->0){
+            nextLst.pop(0);
+        }
+        return prevTok;
+    }
+    var nextType = function(typ, pos){
+        if(arguments.length == 1){
+            pos = 0;
+        }
+        if(typeof typ == 'number' && getNext(pos).typ === typ ||
+            typeof typ == 'string' && getNext(pos).content === typ){
+            return true;
+        }
+        return false;
     }
     var accept = function(typ){
-        if(getNext().typ === typ){
+        if(nextType(typ)){
             consume();
             return true;
         }
         return false;
     }
     var expect = function(typ){
-        if(getNext().typ === typ){
-            consume();
+        if(accept(typ)){
             return;
         }
         throw new SyntaxError("Unexpected token " + getNext() + ". Wanted " + typ);
     }
+    var parseRepeatedHOF = function(parseFunc, repeatedTok, canEnd){
+        return function(){
+            item = parseFunc();
+            if(nextType(repeatedTok)){
+                lst = [item];
+                do{
+                    lst.append(parseFunc());
+                }while(handleTrailing(repeatedTok, canEnd))
+                return lst;
+            }
+            return item;
+        }
+    }
+    var parseRepeatedOpHOF = function(parseFunc, repeatedTok, constructor){
+        return function(){
+            item = parseFunc();
+            if(nextType(repeatedTok)){
+                do{
+                    item = constructor(parseFunc(), item);
+                }while(nextType(repeatedTok))
+            }
+            return item;
+        }
+    }
     var parse = function(data){
         tokenizer = new Tokenizer(data);
-        return parseStmt();
+        return parseSingle();
+    }
+    var parseSingle = function(){
+        if(nextType(Kinds.EOL)){
+            consume();
+            return;
+        }
+        if(nextType(Kinds.Keyword)){
+            return parseCompound();
+        }
+        return parseSimple();
     }
     var parseStmt = function(){
         return;
     }
+    var parseExprStmt = function(){
+        lst = parseTestList();
+        next = getNext();
+        if(next.content.length >= 2 && next.content.indexOf("=") != -1){
+            //TODO: augassign
+            raise Error("augassign not implemented LOL");
+        }
+        if(haveMore() && nextType("=")){
+            //make assignment statement here
+        }
+    }
     var parseSimple = function(){
-        return;
+        small = parseRepeatedHOF(parseExprStmt, ";", true)();
+        if(haveMore()){
+            expect(Kinds.EOL);
+        }
+        return small;
     }
     var parseSmall = function(){
         return;
     }
-    var parseExprStmt = function(){
-        return;
-    }
-    var parseTestList = function(){
-        test = parseTest();
-        if(accept(",")){
-            test = [test]
-            do{
-                test.append(parseTest());
-            }while(accept(","))
+    var handleTrailing = function(trailer, canEnd){
+        if(nextType(trailer, 0)){
+            if(nextType(Kinds.EOL, 1) && canEnd){
+                consume(2);
+                return true;
+            }
         }
     }
+    var parseOrTest = parseRepeatedHOF(parseAndTest, "or")
+
     var parseTest = function(){
         return;
     }
+    var parseTestList = parseRepeatedHOF(parseTest, ",", true);
     var parseCompound = function(){
         return;
     }
@@ -68,6 +135,7 @@ var Kinds = {
     DELIM: 6,
     NEWLINE: 7,
     KEYWORD: 8,
+    EOL: 9,
 }
 
 var Keywords = {
@@ -308,6 +376,9 @@ var Tokenizer = function(text) {
             throw new SyntaxError("Unexpected token " + current());
         }
         return res;
+    }
+    var haveMore = function(){
+        return i < text.length;
     }
     this.next = next;
 }
